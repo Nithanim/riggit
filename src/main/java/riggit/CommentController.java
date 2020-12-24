@@ -1,12 +1,15 @@
 package riggit;
 
 import java.net.URL;
+import java.util.HashSet;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.function.Consumer;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -18,9 +21,12 @@ import net.dean.jraw.tree.ReplyCommentNode;
 
 public class CommentController implements Initializable {
   @SneakyThrows
-  public static CommentController create(RedditService redditService, CommentNode<?> rootComment) {
+  public static CommentController create(
+      RedditService redditService,
+      CommentNode<?> rootComment,
+      Consumer<CommentController> loadMoreCommentsCallback) {
     var loader = new FXMLLoader();
-    var controller = new CommentController(redditService, rootComment);
+    var controller = new CommentController(redditService, rootComment, loadMoreCommentsCallback);
     loader.setController(controller);
     loader.setLocation(MainController.class.getResource("/fxml/comment.fxml"));
     loader.setClassLoader(MainController.class.getClassLoader());
@@ -36,11 +42,25 @@ public class CommentController implements Initializable {
   @FXML Label date;
 
   private final RedditService redditService;
-  private final CommentNode<?> rootComment;
+  @Getter private final CommentNode<?> rootComment;
+  private final Consumer<CommentController> loadMoreCommentsCallback;
+  private final Button loadMoreButton;
 
-  public CommentController(RedditService redditService, CommentNode<?> rootComment) {
+  private Set<String> existingIds = new HashSet<>();
+
+  public CommentController(
+      RedditService redditService,
+      CommentNode<?> rootComment,
+      Consumer<CommentController> loadMoreCommentsCallback) {
     this.redditService = redditService;
     this.rootComment = rootComment;
+    this.loadMoreCommentsCallback = loadMoreCommentsCallback;
+    if (rootComment.hasMoreChildren()) {
+      loadMoreButton = new Button();
+      loadMoreButton.setText(" more comments...");
+    } else {
+      loadMoreButton = null;
+    }
   }
 
   @Override
@@ -57,19 +77,26 @@ public class CommentController implements Initializable {
       text.setMinHeight(Region.USE_PREF_SIZE); // This (somehow) makes text wrap work...
       contentPane.getChildren().add(text);
 
-      var mc = c.getReplies();
-      subcomments
-          .getChildren()
-          .addAll(
-              mc.stream()
-                  .map(comment -> create(redditService, comment))
-                  .map(CommentController::getRoot)
-                  .collect(Collectors.toList()));
-
-      if(rootComment.hasMoreChildren()) {
-        LoadMoreCommentController loadMoreController = LoadMoreCommentController.create(redditService, rootComment);
-        subcomments.getChildren().add(loadMoreController.getRoot());
+      if (rootComment.hasMoreChildren()) {
+        // TODO thread continuation
+        loadMoreButton.setText(
+            rootComment.getMoreChildren().getChildrenIds().size() + " " + loadMoreButton.getText());
+        subcomments.getChildren().add(loadMoreButton);
+        loadMoreButton.setOnAction(e -> loadMoreCommentsCallback.accept(this));
       }
+    }
+  }
+
+  public void attachChildComment(CommentController commentController) {
+    var children = subcomments.getChildren();
+    if (children.size() > 0) {
+      if (children.get(children.size() - 1) == loadMoreButton) {
+        children.add(children.size() - 1, commentController.getRoot());
+      } else {
+        children.add(commentController.getRoot());
+      }
+    } else {
+      children.add(commentController.getRoot());
     }
   }
 }

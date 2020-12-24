@@ -50,3 +50,8 @@
     -fx-max-height: 3.7em; /* line-height ist normally ~1.2 (em), so multiply with number of lines + slack*/
     -fx-text-overrun: word-ellipsis;
 }
+
+
+.comment {
+    -fx-background-color: #58626A;
+}
