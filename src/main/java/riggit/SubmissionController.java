@@ -52,13 +52,18 @@ public class SubmissionController implements Initializable {
     } else if ("image".equals(submission.getPostHint()) && submission.getThumbnail() != null) {
       if (teaser) {
         if (submission.getDomain().equals("i.redd.it")) {
-
+          contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
         } else {
           contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
         }
       } else {
-        // todo
-        contentPane.getChildren().add(new Label("<Video>"));
+
+        if (submission.getDomain().equals("i.redd.it")) {
+          contentPane.getChildren().add(new ImageView(submission.getUrl()));
+        } else {
+          // todo
+          contentPane.getChildren().add(new Label("<Image>"));
+        }
       }
     } else if ("self".equals(submission.getPostHint())) { // text
       if(teaser) {
