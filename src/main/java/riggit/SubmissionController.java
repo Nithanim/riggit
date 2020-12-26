@@ -46,58 +46,80 @@ public class SubmissionController implements Initializable {
     if (submission.getPostHint() == null) {
       // e.g. text post without text (title only)
     } else if ("link".equals(submission.getPostHint())) {
-      if ("v.redd.it".equals(submission.getDomain())) {
-        contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
-      } else if ("i.imgur.com".equals(submission.getDomain())) {
-        if (teaser) {
-          contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
-        } else {
-          if (submission.getUrl().endsWith(".gifv")) {
-            contentPane.getChildren().add(new Label("<imgur:video>"));
-          } else {
-            contentPane.getChildren().add(new ImageView(submission.getUrl()));
-          }
-        }
-      } else {
-        contentPane.getChildren().add(new Hyperlink(submission.getUrl()));
-      }
-    } else if ("image".equals(submission.getPostHint()) && submission.getThumbnail() != null) {
-      if (teaser) {
-        if (submission.getDomain().equals("i.redd.it")) {
-          contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
-        } else {
-          contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
-        }
-      } else {
-
-        if (submission.getDomain().equals("i.redd.it")) {
-          contentPane.getChildren().add(new ImageView(submission.getUrl()));
-        } else {
-          // todo
-          contentPane.getChildren().add(new Label("<Image>"));
-        }
-      }
+      handleLink();
+    } else if ("image".equals(submission.getPostHint())) {
+      handleImage();
     } else if ("self".equals(submission.getPostHint())) { // text
-      if (teaser) {
-        Label text = new Label(submission.getSelfText().substring(0, 200));
-        text.setWrapText(true);
-        text.setStyle("-fx-max-height: 3.7em; -fx-text-overrun: word-ellipsis;");
-        contentPane.getChildren().add(text);
-      } else {
-        Label text = new Label(submission.getSelfText());
-        text.setWrapText(true);
-        contentPane.getChildren().add(text);
-      }
+      handleSelf();
     } else if ("hosted:video".equals(submission.getPostHint())) {
-      if("v.redd.it".equals(submission.getDomain())) {
-
-      }
-      contentPane.getChildren().add(new Label("<hosted:video>"));
+      handleHostedVideo();
     } else if ("rich:video".equals(submission.getPostHint())) {
-      // e.g. gfycat.com
-      contentPane.getChildren().add(new Label("<hosted:video>"));
+      handleRichVideo();
     } else {
       contentPane.getChildren().add(new Label("<ELSE>"));
+    }
+  }
+
+  private void handleRichVideo() {
+    // e.g. gfycat.com
+    contentPane.getChildren().add(new Label("<rich:video>"));
+  }
+
+  private void handleHostedVideo() {
+    if ("v.redd.it".equals(submission.getDomain())) {}
+
+    contentPane.getChildren().add(new Label("<hosted:video>"));
+  }
+
+  private void handleSelf() {
+    if (teaser) {
+      Label text = new Label(submission.getSelfText().substring(0, 200));
+      text.setWrapText(true);
+      text.setStyle("-fx-max-height: 3.7em; -fx-text-overrun: word-ellipsis;");
+      contentPane.getChildren().add(text);
+    } else {
+      Label text = new Label(submission.getSelfText());
+      text.setWrapText(true);
+      contentPane.getChildren().add(text);
+    }
+  }
+
+  private void handleImage() {
+    if (submission.getThumbnail() != null) {
+      contentPane.getChildren().add(new Label("<Image without thumbnail>"));
+    }
+    if (teaser) {
+      if (submission.getDomain().equals("i.redd.it")) {
+        contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+      } else {
+        contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+      }
+    } else {
+
+      if (submission.getDomain().equals("i.redd.it")) {
+        contentPane.getChildren().add(new ImageView(submission.getUrl()));
+      } else {
+        // todo
+        contentPane.getChildren().add(new Label("<Image>"));
+      }
+    }
+  }
+
+  private void handleLink() {
+    if ("v.redd.it".equals(submission.getDomain())) {
+      contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+    } else if ("i.imgur.com".equals(submission.getDomain())) {
+      if (teaser) {
+        contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+      } else {
+        if (submission.getUrl().endsWith(".gifv")) {
+          contentPane.getChildren().add(new Label("<imgur:video>"));
+        } else {
+          contentPane.getChildren().add(new ImageView(submission.getUrl()));
+        }
+      }
+    } else {
+      contentPane.getChildren().add(new Hyperlink(submission.getUrl()));
     }
   }
 }
