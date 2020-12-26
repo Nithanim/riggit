@@ -109,7 +109,7 @@ public class SubmissionController implements Initializable {
   }
 
   private void handleImage() {
-    if (submission.getThumbnail() != null) {
+    if (submission.getThumbnail() == null) {
       contentPane.getChildren().add(new Label("<Image without thumbnail>"));
     }
     if (teaser) {
