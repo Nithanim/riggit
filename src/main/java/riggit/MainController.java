@@ -13,6 +13,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import lombok.SneakyThrows;
@@ -79,10 +81,16 @@ public class MainController implements Initializable {
     try {
       Parent teaserNode = loader.load();
       teaserNode.getStyleClass().add("teaser");
-      teaserNode.setOnMouseClicked(e -> setupContentSubmission(t));
+      teaserNode.setOnMouseClicked(e -> onSubmissionClicked(e, t));
       return teaserNode;
     } catch (IOException e) {
       throw new IllegalStateException(e);
+    }
+  }
+
+  private void onSubmissionClicked(MouseEvent e, Submission t) {
+    if (e.getButton() == MouseButton.PRIMARY) {
+      setupContentSubmission(t);
     }
   }
 
@@ -140,10 +148,10 @@ public class MainController implements Initializable {
         new Task<>() {
           @Override
           protected List<CommentNode<?>> call() throws Exception {
-           return c.getRootComment().replaceMore(redditService.getRedditClient());
+            return c.getRootComment().replaceMore(redditService.getRedditClient());
           }
         };
-    //task.setOnSucceeded(e -> setupComments());
+    // task.setOnSucceeded(e -> setupComments());
     task.setOnFailed(e -> e.getSource().getException().printStackTrace());
     Thread t = new Thread(task);
     t.setDaemon(true);
