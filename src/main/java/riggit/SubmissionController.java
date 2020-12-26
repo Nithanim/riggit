@@ -43,9 +43,21 @@ public class SubmissionController implements Initializable {
     date.setText(DateUtil.dateToDifference(creationDate));
     date.setTooltip(new Tooltip(creationDate.withNano(0).toString()));
     // null allowed
-    if ("link".equals(submission.getPostHint())) {
+    if (submission.getPostHint() == null) {
+      // e.g. text post without text (title only)
+    } else if ("link".equals(submission.getPostHint())) {
       if ("v.redd.it".equals(submission.getDomain())) {
         contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+      } else if ("i.imgur.com".equals(submission.getDomain())) {
+        if (teaser) {
+          contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+        } else {
+          if (submission.getUrl().endsWith(".gifv")) {
+            contentPane.getChildren().add(new Label("<imgur:video>"));
+          } else {
+            contentPane.getChildren().add(new ImageView(submission.getUrl()));
+          }
+        }
       } else {
         contentPane.getChildren().add(new Hyperlink(submission.getUrl()));
       }
@@ -66,7 +78,7 @@ public class SubmissionController implements Initializable {
         }
       }
     } else if ("self".equals(submission.getPostHint())) { // text
-      if(teaser) {
+      if (teaser) {
         Label text = new Label(submission.getSelfText().substring(0, 200));
         text.setWrapText(true);
         text.setStyle("-fx-max-height: 3.7em; -fx-text-overrun: word-ellipsis;");
@@ -76,9 +88,16 @@ public class SubmissionController implements Initializable {
         text.setWrapText(true);
         contentPane.getChildren().add(text);
       }
+    } else if ("hosted:video".equals(submission.getPostHint())) {
+      if("v.redd.it".equals(submission.getDomain())) {
+
+      }
+      contentPane.getChildren().add(new Label("<hosted:video>"));
+    } else if ("rich:video".equals(submission.getPostHint())) {
+      // e.g. gfycat.com
+      contentPane.getChildren().add(new Label("<hosted:video>"));
     } else {
-      // e.g. text post without text (title only)
-      //contentPane.getChildren().add(new Label("<ELSE>"));
+      contentPane.getChildren().add(new Label("<ELSE>"));
     }
   }
 }
