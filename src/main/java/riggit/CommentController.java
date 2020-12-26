@@ -1,10 +1,13 @@
 package riggit;
 
 import java.net.URL;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Set;
 import java.util.function.Consumer;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -26,7 +29,7 @@ public class CommentController implements Initializable {
       CommentNode<?> rootComment,
       Consumer<CommentController> loadMoreCommentsCallback) {
     var loader = new FXMLLoader();
-    var controller = new CommentController(redditService, rootComment, loadMoreCommentsCallback);
+    var controller = new CommentController(redditService, rootComment);
     loader.setController(controller);
     loader.setLocation(MainController.class.getResource("/fxml/comment.fxml"));
     loader.setClassLoader(MainController.class.getClassLoader());
@@ -43,18 +46,13 @@ public class CommentController implements Initializable {
 
   private final RedditService redditService;
   @Getter private final CommentNode<?> rootComment;
-  private final Consumer<CommentController> loadMoreCommentsCallback;
   private final Button loadMoreButton;
 
-  private Set<String> existingIds = new HashSet<>();
+  private Map<String, CommentController> existing = new HashMap<>();
 
-  public CommentController(
-      RedditService redditService,
-      CommentNode<?> rootComment,
-      Consumer<CommentController> loadMoreCommentsCallback) {
+  public CommentController(RedditService redditService, CommentNode<?> rootComment) {
     this.redditService = redditService;
     this.rootComment = rootComment;
-    this.loadMoreCommentsCallback = loadMoreCommentsCallback;
     if (rootComment.hasMoreChildren()) {
       loadMoreButton = new Button();
       loadMoreButton.setText(" more comments...");
@@ -79,24 +77,73 @@ public class CommentController implements Initializable {
 
       if (rootComment.hasMoreChildren()) {
         // TODO thread continuation
+        // Number of comments to load is wrong :(
         loadMoreButton.setText(
             rootComment.getMoreChildren().getChildrenIds().size() + " " + loadMoreButton.getText());
         subcomments.getChildren().add(loadMoreButton);
-        loadMoreButton.setOnAction(e -> loadMoreCommentsCallback.accept(this));
+        loadMoreButton.setOnAction(e -> onLoadMoreComments());
       }
     }
   }
 
-  public void attachChildComment(CommentController commentController) {
-    var children = subcomments.getChildren();
-    if (children.size() > 0) {
-      if (children.get(children.size() - 1) == loadMoreButton) {
-        children.add(children.size() - 1, commentController.getRoot());
-      } else {
-        children.add(commentController.getRoot());
+  private void onLoadMoreComments() {
+    var task =
+        new Task<>() {
+          @Override
+          protected List<CommentNode<?>> call() throws Exception {
+            return rootComment.replaceMore(redditService.getRedditClient());
+          }
+        };
+    task.setOnSucceeded(e -> update(true));
+    task.setOnFailed(e -> e.getSource().getException().printStackTrace());
+    Thread t = new Thread(task);
+    t.setDaemon(true);
+    t.start();
+  }
+
+  public void update() {
+    update(false);
+  }
+
+  private void update(boolean loadMore) {
+    var replies = rootComment.getReplies();
+    var allReplies = new LinkedHashMap<String, CommentNode<Comment>>();
+    for (var reply : replies) {
+      allReplies.put(reply.getSubject().getFullName(), reply);
+    }
+    Map<String, CommentNode<Comment>> missingReplies = new LinkedHashMap<>(allReplies);
+
+    missingReplies.keySet().removeAll(existing.keySet());
+
+    if (!missingReplies.isEmpty()) {
+      removeButton();
+
+      for (var e : missingReplies.entrySet()) {
+        CommentController commentController =
+            CommentController.create(redditService, e.getValue(), null);
+        subcomments.getChildren().add(commentController.getRoot());
+        existing.put(e.getKey(), commentController);
       }
-    } else {
-      children.add(commentController.getRoot());
+    }
+    addButtonIfNecessary();
+    existing.values().forEach(CommentController::update);
+  }
+
+  private void addButtonIfNecessary() {
+    if (rootComment.hasMoreChildren()) {
+      if (subcomments.getChildren().isEmpty()
+          || subcomments.getChildren().get(subcomments.getChildren().size() - 1)
+              != loadMoreButton) {
+        subcomments.getChildren().add(loadMoreButton);
+      }
+    }
+  }
+
+  private void removeButton() {
+    if (!subcomments.getChildren().isEmpty()) {
+      if (subcomments.getChildren().get(subcomments.getChildren().size() - 1) == loadMoreButton) {
+        subcomments.getChildren().remove(subcomments.getChildren().size() - 1);
+      }
     }
   }
 }
