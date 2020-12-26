@@ -6,14 +6,21 @@ import java.util.ResourceBundle;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import net.dean.jraw.models.Submission;
 
 public class SubmissionController implements Initializable {
+  @FXML Pane root;
   @FXML VBox contentPane;
   @FXML Label title;
   @FXML Label subreddit;
@@ -58,6 +65,23 @@ public class SubmissionController implements Initializable {
     } else {
       contentPane.getChildren().add(new Label("<ELSE>"));
     }
+
+    ContextMenu contextMenu = new ContextMenu();
+    MenuItem menuItem1 = new MenuItem("Copy link");
+    menuItem1.setOnAction(
+        e -> {
+          final ClipboardContent clipboardContent = new ClipboardContent();
+          clipboardContent.putString("https://reddit.com" + submission.getPermalink());
+          Clipboard.getSystemClipboard().setContent(clipboardContent);
+        });
+    contextMenu.getItems().add(menuItem1);
+
+    root.setOnMousePressed(
+        e -> {
+          if (e.getButton() == MouseButton.SECONDARY) {
+            contextMenu.show(root, e.getScreenX(), e.getScreenY());
+          }
+        });
   }
 
   private void handleRichVideo() {
