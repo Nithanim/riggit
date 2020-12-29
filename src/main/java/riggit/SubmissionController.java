@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ResourceBundle;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Hyperlink;
@@ -15,7 +16,10 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import net.dean.jraw.models.Submission;
 
@@ -86,21 +90,40 @@ public class SubmissionController implements Initializable {
 
   private void handleRichVideo() {
     // e.g. gfycat.com
-    contentPane.getChildren().add(new Label("<rich:video>"));
+    if (teaser) {
+      contentPane.getChildren().add(makeVideoThumbnail(submission.getThumbnail()));
+    } else {
+      /*VideoPlayer vp = new VideoPlayer(submission.getThumbnail(), submission.getUrl());
+      contentPane.getChildren().add(vp.getStack());*/
+    }
   }
 
   private void handleHostedVideo() {
-    if ("v.redd.it".equals(submission.getDomain())) {}
-
-    contentPane.getChildren().add(new Label("<hosted:video>"));
+    if ("v.redd.it".equals(submission.getDomain())) {
+      if (teaser) {
+        if("default".equals(submission.getThumbnail())) {
+          // e.g. https://v.redd.it/wh30vduq4y761
+          contentPane.getChildren().add(new Label("<vreddit without preview>"));
+        } else {
+          contentPane.getChildren().add(makeVideoThumbnail(submission.getThumbnail()));
+        }
+      } else {
+        VideoPlayer vp =
+            new VideoPlayer(submission.getThumbnail(), submission.getUrl() + "/HLSPlaylist.m3u8");
+        contentPane.getChildren().add(vp.getRoot());
+      }
+    } else {
+      contentPane.getChildren().add(new Label("<hosted:video>"));
+    }
   }
 
   private void handleSelf() {
     if (teaser) {
-      Label text = new Label(submission.getSelfText().substring(0, 200));
-      text.setWrapText(true);
-      text.setStyle("-fx-max-height: 3.7em; -fx-text-overrun: word-ellipsis;");
-      contentPane.getChildren().add(text);
+      String text = submission.getSelfText();
+      var label = new Label(text.substring(0, Math.min(text.length(), 200)));
+      label.setWrapText(true);
+      label.setStyle("-fx-max-height: 3.7em; -fx-text-overrun: word-ellipsis;");
+      contentPane.getChildren().add(label);
     } else {
       Label text = new Label(submission.getSelfText());
       text.setWrapText(true);
@@ -114,14 +137,21 @@ public class SubmissionController implements Initializable {
     }
     if (teaser) {
       if (submission.getDomain().equals("i.redd.it")) {
-        contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+        if ("image".equals(submission.getThumbnail())) {
+          // why? maybe size too small for thumbnail
+          contentPane.getChildren().add(makeResizableImageView(submission.getUrl()));
+        } else if ("nsfw".equals(submission.getThumbnail())) {
+          contentPane.getChildren().add(new Label("nsfw"));
+        } else {
+          contentPane.getChildren().add(makeResizableImageView(submission.getThumbnail()));
+        }
       } else {
-        contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+        contentPane.getChildren().add(makeResizableImageView(submission.getThumbnail()));
       }
     } else {
-
-      if (submission.getDomain().equals("i.redd.it")) {
-        contentPane.getChildren().add(new ImageView(submission.getUrl()));
+      if (submission.getDomain().equals("i.redd.it")
+          || submission.getDomain().equals("i.imgur.com")) {
+        contentPane.getChildren().add(makeResizableImageView(submission.getUrl()));
       } else {
         // todo
         contentPane.getChildren().add(new Label("<Image>"));
@@ -130,20 +160,52 @@ public class SubmissionController implements Initializable {
   }
 
   private void handleLink() {
-    if ("v.redd.it".equals(submission.getDomain())) {
-      contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
-    } else if ("i.imgur.com".equals(submission.getDomain())) {
+    if ("nsfw".equals(submission.getThumbnail())) {
+      contentPane.getChildren().add(new Label("<link:nsfw>"));
+    } else if ("v.redd.it".equals(submission.getDomain())) {
+      contentPane.getChildren().add(makeResizableImageView(submission.getThumbnail()));
+    } else if ("i.imgur.com".equals(submission.getDomain())
+        || "imgur.com".equals(submission.getDomain())) {
       if (teaser) {
-        contentPane.getChildren().add(new ImageView(submission.getThumbnail()));
+        if (submission.getUrl().endsWith(".gifv")) {
+          /*VideoPlayer vp =
+                  new VideoPlayer(submission.getThumbnail(), submission.getUrl() + "/HLSPlaylist.m3u8");
+          contentPane.getChildren().add(vp.getRoot());*/
+        } else {
+          contentPane.getChildren().add(new Label("TODO gifv"));
+          contentPane.getChildren().add(makeResizableImageView(submission.getThumbnail()));
+        }
       } else {
         if (submission.getUrl().endsWith(".gifv")) {
           contentPane.getChildren().add(new Label("<imgur:video>"));
         } else {
-          contentPane.getChildren().add(new ImageView(submission.getUrl()));
+          contentPane.getChildren().add(makeResizableImageView(submission.getUrl()));
         }
       }
     } else {
       contentPane.getChildren().add(new Hyperlink(submission.getUrl()));
     }
+  }
+
+  private Pane makeVideoThumbnail(String url) {
+    var stackPane = new StackPane();
+    stackPane.getChildren().add(new ImageView(url));
+    Label tag = new Label("VIDEO");
+    tag.setStyle("-fx-stroke: black; -fx-stroke-width: 1; -fx-fill: white;");
+    stackPane.getChildren().add(tag);
+    StackPane.setAlignment(tag, Pos.BOTTOM_LEFT);
+    stackPane.maxHeight(Region.USE_COMPUTED_SIZE);
+    stackPane.setMaxWidth(Region.USE_COMPUTED_SIZE);
+    var borderPane = new BorderPane();
+    borderPane.setCenter(stackPane);
+    return borderPane;
+  }
+
+  private BorderPane makeResizableImageView(String url) {
+    BorderPane borderPane = new BorderPane();
+    ImageView iv = new ResizableImageView(url);
+    iv.setPreserveRatio(true);
+    borderPane.setCenter(iv);
+    return borderPane;
   }
 }
