@@ -89,12 +89,16 @@ public class SubmissionController implements Initializable {
   }
 
   private void handleRichVideo() {
-    // e.g. gfycat.com
+    // e.g. gfycat.com; https://youtu.be/4et-mghfdfdf--
     if (teaser) {
       contentPane.getChildren().add(makeVideoThumbnail(submission.getThumbnail()));
     } else {
-      /*VideoPlayer vp = new VideoPlayer(submission.getThumbnail(), submission.getUrl());
-      contentPane.getChildren().add(vp.getStack());*/
+      if ("youtu.be".equals(submission.getDomain())
+          || "youtube.com".equals(submission.getDomain())) {
+        contentPane.getChildren().add(new Hyperlink(submission.getUrl()));
+      } else {
+        contentPane.getChildren().add(new Label("<rich:video>"));
+      }
     }
   }
 
