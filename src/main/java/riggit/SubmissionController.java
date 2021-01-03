@@ -101,15 +101,18 @@ public class SubmissionController implements Initializable {
   private void handleHostedVideo() {
     if ("v.redd.it".equals(submission.getDomain())) {
       if (teaser) {
-        if("default".equals(submission.getThumbnail())) {
+        if ("default".equals(submission.getThumbnail())) {
           // e.g. https://v.redd.it/wh30vduq4y761
           contentPane.getChildren().add(new Label("<vreddit without preview>"));
+        } else if ("nsfw".equals(submission.getThumbnail())) {
+          contentPane.getChildren().add(new Label("<vreddit nsfw>"));
         } else {
           contentPane.getChildren().add(makeVideoThumbnail(submission.getThumbnail()));
         }
       } else {
+        String thumbnail = "nsfw".equals(submission.getThumbnail()) ? null : submission.getThumbnail();
         VideoPlayer vp =
-            new VideoPlayer(submission.getThumbnail(), submission.getUrl() + "/HLSPlaylist.m3u8");
+            new VideoPlayer(thumbnail, submission.getUrl() + "/DASHPlaylist.mpd");
         contentPane.getChildren().add(vp.getRoot());
       }
     } else {

@@ -3,10 +3,12 @@ package riggit;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import lombok.Getter;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.javafx.videosurface.ImageViewVideoSurfaceFactory;
@@ -30,7 +32,20 @@ public class VideoPlayer {
     root.setCenter(stack);
     stack.maxHeight(Pane.USE_COMPUTED_SIZE);
     stack.maxWidth(Pane.USE_COMPUTED_SIZE);
-    this.imageView = new ImageView(thumbnailUrl);
+    if (thumbnailUrl != null) {
+      this.imageView = new ImageView(thumbnailUrl);
+    } else {
+      var wi = new WritableImage(200, 200);
+      var pixelWriter = wi.getPixelWriter();
+      Color color = Color.color(0.6, 0, 0);
+      for (int y = 0; y < 200; y++) {
+        for (int x = 0; x < 200; x++) {
+          pixelWriter.setColor(x, y, color);
+        }
+      }
+
+      this.imageView = new ImageView(wi);
+    }
     stack.getChildren().add(imageView);
     var icon = new Label("Video");
     stack.getChildren().add(icon);
