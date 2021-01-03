@@ -55,7 +55,10 @@ public class SubmissionController implements Initializable {
     date.setTooltip(new Tooltip(creationDate.withNano(0).toString()));
     // null allowed
     if (submission.getPostHint() == null) {
-      // e.g. text post without text (title only)
+      // e.g. text post without text (title only) BUT NOT ALWAYS
+      if(submission.getSelfText() != null) {
+        handleSelf();
+      }
     } else if ("link".equals(submission.getPostHint())) {
       handleLink();
     } else if ("image".equals(submission.getPostHint())) {
