@@ -36,6 +36,8 @@ public class SubmissionController implements Initializable {
 
   private final Submission submission;
   private final boolean teaser;
+  /** Keep strong ref */
+  private VideoPlayer videoPlayer;
 
   public SubmissionController(Submission submission, boolean teaser) {
     this.submission = submission;
@@ -117,10 +119,10 @@ public class SubmissionController implements Initializable {
           contentPane.getChildren().add(makeVideoThumbnail(submission.getThumbnail()));
         }
       } else {
-        String thumbnail = "nsfw".equals(submission.getThumbnail()) ? null : submission.getThumbnail();
-        VideoPlayer vp =
-            new VideoPlayer(thumbnail, submission.getUrl() + "/DASHPlaylist.mpd");
-        contentPane.getChildren().add(vp.getRoot());
+        String thumbnail =
+            "nsfw".equals(submission.getThumbnail()) ? null : submission.getThumbnail();
+        this.videoPlayer = new VideoPlayer(thumbnail, submission.getUrl() + "/DASHPlaylist.mpd");
+        contentPane.getChildren().add(this.videoPlayer.getRoot());
       }
     } else {
       contentPane.getChildren().add(new Label("<hosted:video>"));

@@ -31,6 +31,8 @@ public class MainController implements Initializable {
   @FXML VBox postContent;
 
   private RedditService redditService = new RedditService();
+  /** Hold strong reference (e.g. for media player) */
+  private SubmissionController submissionController;
 
   public MainController() throws IOException {}
 
@@ -97,7 +99,8 @@ public class MainController implements Initializable {
   private void setupContentSubmission(Submission submission) {
     var subLoader = new FXMLLoader();
     subLoader.setLocation(MainController.class.getResource("/fxml/submission.fxml"));
-    subLoader.setController(new SubmissionController(submission, false));
+    submissionController = new SubmissionController(submission, false);
+    subLoader.setController(submissionController);
     subLoader.setClassLoader(MainController.class.getClassLoader());
     try {
       postContent.getChildren().clear();
