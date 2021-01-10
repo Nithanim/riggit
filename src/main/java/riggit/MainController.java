@@ -6,28 +6,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.Parent;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.DataFormat;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import lombok.SneakyThrows;
-import net.dean.jraw.RedditClient;
 import net.dean.jraw.models.Submission;
-import net.dean.jraw.models.SubredditSort;
-import net.dean.jraw.pagination.DefaultPaginator;
 import net.dean.jraw.tree.CommentNode;
 import net.dean.jraw.tree.ReplyCommentNode;
 import net.dean.jraw.tree.RootCommentNode;
@@ -45,36 +37,8 @@ public class MainController implements Initializable {
   @SneakyThrows
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
-    Callable<List<Parent>> c =
-        () -> {
-          RedditClient reddit = redditService.getRedditClient();
-          DefaultPaginator<Submission> frontpage =
-              reddit.frontPage().limit(20).sorting(SubredditSort.HOT).build();
-          frontpage.next();
 
-          List<Parent> teaserNodes =
-              frontpage.getCurrent().stream()
-                  .map(this::setupFeedSubmission)
-                  .collect(Collectors.toList());
-          return teaserNodes;
-        };
-    var task =
-        new Task<List<Parent>>() {
-          @Override
-          protected List<Parent> call() throws Exception {
-            return c.call();
-          }
-        };
-    task.setOnSucceeded(
-        e -> {
-          List<Parent> value = (List<Parent>) e.getSource().getValue();
-          postFeed.getChildren().addAll(value);
-        });
-    task.setOnFailed(e -> e.getSource().getException().printStackTrace());
-
-    Thread th = new Thread(task);
-    th.setDaemon(true);
-    th.start();
+    new FeedController(redditService, this::setupContentSubmission, postFeed);
 
     registerFocusListener(this::onFocusChanged);
   }
@@ -119,27 +83,6 @@ public class MainController implements Initializable {
 
   public void postInitialize() {
     ((Stage) postFeed.getScene().getWindow()).setOnCloseRequest((e) -> redditService.close());
-  }
-
-  private Parent setupFeedSubmission(Submission t) {
-    var loader = new FXMLLoader();
-    loader.setLocation(MainController.class.getResource("/fxml/submission.fxml"));
-    loader.setController(new SubmissionController(t, true));
-    loader.setClassLoader(MainController.class.getClassLoader());
-    try {
-      Parent teaserNode = loader.load();
-      teaserNode.getStyleClass().add("teaser");
-      teaserNode.setOnMouseClicked(e -> onSubmissionClicked(e, t));
-      return teaserNode;
-    } catch (IOException e) {
-      throw new IllegalStateException(e);
-    }
-  }
-
-  private void onSubmissionClicked(MouseEvent e, Submission t) {
-    if (e.getButton() == MouseButton.PRIMARY) {
-      setupContentSubmission(t);
-    }
   }
 
   private void setupContentSubmission(Submission submission) {
