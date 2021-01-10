@@ -53,7 +53,7 @@ public class VideoPlayerControlsController implements Initializable {
     this.stateButton.setOnAction(
         e -> {
           State state = mediaPlayer.media().info().state();
-          if (state == State.PAUSED) {
+          if (state == State.PAUSED || state == State.STOPPED || state == State.ENDED) {
             mediaPlayer.controls().play();
           } else if (state == State.PLAYING) {
             mediaPlayer.controls().pause();
