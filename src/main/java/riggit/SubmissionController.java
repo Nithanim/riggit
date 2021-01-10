@@ -21,6 +21,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import lombok.Getter;
 import net.dean.jraw.models.Submission;
 
 public class SubmissionController implements Initializable {
@@ -34,6 +35,7 @@ public class SubmissionController implements Initializable {
   @FXML Label commentsNumber;
   @FXML Label date;
 
+  @Getter
   private final Submission submission;
   private final boolean teaser;
   /** Keep strong ref */

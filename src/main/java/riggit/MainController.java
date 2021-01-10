@@ -7,12 +7,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.DataFormat;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
@@ -69,6 +75,46 @@ public class MainController implements Initializable {
     Thread th = new Thread(task);
     th.setDaemon(true);
     th.start();
+
+    registerFocusListener(this::onFocusChanged);
+  }
+
+  private void registerFocusListener(ChangeListener<Boolean> focusListener) {
+    postContent
+        .sceneProperty()
+        .addListener(
+            (observableValue, a, b) -> {
+              if (a != null) {
+                a.getWindow().focusedProperty().removeListener(focusListener);
+              }
+              b.getWindow()
+                  .focusedProperty()
+                  .removeListener(
+                      focusListener); // Needed because... this listener is called multiple times
+              // with a=null and the same stage
+              b.getWindow().focusedProperty().addListener(focusListener);
+            });
+  }
+
+  private void onFocusChanged(
+      ObservableValue<? extends Boolean> observableValue, Boolean a, Boolean b) {
+    if (b) {
+      String text = (String) Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
+      if (text != null) {
+        Matcher m =
+            Pattern.compile(
+                    "https://www\\.reddit\\.com/r/([^/]+)/comments/([^/]+)/([^/]+)/(?:\\?.*|$)")
+                .matcher(text);
+        if (m.matches()) {
+          String submissionId = m.group(2);
+          if (submissionController == null
+              || !submissionController.getSubmission().getId().equals(submissionId)) {
+            var submissionReference = redditService.getRedditClient().submission(submissionId);
+            setupContentSubmission(submissionReference.inspect());
+          }
+        }
+      }
+    }
   }
 
   public void postInitialize() {
