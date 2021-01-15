@@ -66,6 +66,9 @@ public class FeedController {
 
   private void onLoadStart() {
     loadMoreItemsButton.setText("Loading more...");
+    if(postFeed.getChildren().size() >= 2) {
+      postFeed.getChildren().get(postFeed.getChildren().size()-2).requestFocus();
+    }
     loadMoreItemsButton.setDisable(true);
   }
 
@@ -76,9 +79,11 @@ public class FeedController {
   }
 
   private void onLoadSuccessful(List<Parent> loadedSubmissionsTeasers) {
-    int buttonIndex = postFeed.getChildren().size() - 1;
+    if (postFeed.getChildren().size() >= 2) {
+      postFeed.getChildren().get(postFeed.getChildren().size() - 2).requestFocus();
+    }
+    postFeed.getChildren().remove(postFeed.getChildren().size() - 1);
     postFeed.getChildren().addAll(loadedSubmissionsTeasers);
-    postFeed.getChildren().remove(buttonIndex);
     loadMoreItemsButton.setText("Load more...");
     loadMoreItemsButton.setDisable(false);
     postFeed.getChildren().add(loadMoreItemsButton);
