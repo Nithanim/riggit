@@ -22,7 +22,7 @@ public class FeedController {
   private final VBox postFeed;
   private final Button loadMoreItemsButton;
 
-  private final DefaultPaginator<Submission> paginator;
+  private DefaultPaginator<Submission> paginator;
 
   public FeedController(
       RedditService redditService, Consumer<Submission> setupContentSubmission, VBox postFeed) {
@@ -33,13 +33,16 @@ public class FeedController {
     this.loadMoreItemsButton = new Button();
     loadMoreItemsButton.setMaxWidth(Double.MAX_VALUE);
     loadMoreItemsButton.setOnAction(e -> doLoadMore());
-    postFeed.getChildren().add(loadMoreItemsButton);
+  }
 
+  public void switchSubreddit(String subredditName) {
     RedditClient reddit = redditService.getRedditClient();
-    paginator = reddit.frontPage().limit(20).sorting(SubredditSort.HOT).build();
+    paginator =
+        reddit.subreddit(subredditName).posts().limit(20).sorting(SubredditSort.HOT).build();
 
+    postFeed.getChildren().clear();
+    postFeed.getChildren().add(loadMoreItemsButton);
     onLoadSuccessful(List.of());
-
     doLoadMore();
   }
 
@@ -66,8 +69,8 @@ public class FeedController {
 
   private void onLoadStart() {
     loadMoreItemsButton.setText("Loading more...");
-    if(postFeed.getChildren().size() >= 2) {
-      postFeed.getChildren().get(postFeed.getChildren().size()-2).requestFocus();
+    if (postFeed.getChildren().size() >= 2) {
+      postFeed.getChildren().get(postFeed.getChildren().size() - 2).requestFocus();
     }
     loadMoreItemsButton.setDisable(true);
   }

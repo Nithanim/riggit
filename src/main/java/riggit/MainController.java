@@ -14,6 +14,8 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TabPane;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.DataFormat;
 import javafx.scene.layout.VBox;
@@ -27,18 +29,23 @@ import net.dean.jraw.tree.RootCommentNode;
 public class MainController implements Initializable {
   @FXML VBox postFeed;
   @FXML VBox postContent;
+  @FXML ScrollPane feedScrollPane;
+  @FXML TabPane feedTabs;
 
   private RedditService redditService = new RedditService();
   /** Hold strong reference (e.g. for media player) */
   private SubmissionController submissionController;
+
+  private FeedController feedController;
 
   public MainController() throws IOException {}
 
   @SneakyThrows
   @Override
   public void initialize(URL url, ResourceBundle resourceBundle) {
+    feedController = new FeedController(redditService, this::setupContentSubmission, postFeed);
 
-    new FeedController(redditService, this::setupContentSubmission, postFeed);
+    new FeedTabController(feedTabs, feedController).initialize(null, null);
 
     registerFocusListener(this::onFocusChanged);
   }
